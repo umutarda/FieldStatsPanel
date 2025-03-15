@@ -3,7 +3,7 @@ using Newtonsoft.Json.Linq;
 
 public class TrackingManagerRpc : JsonRpcService
 {
-    private TrackingManager trackingManager;
+    private readonly TrackingManager trackingManager;
 
     // Constructor that accepts a TrackingManager instance.
     public TrackingManagerRpc(TrackingManager trackingManager)
