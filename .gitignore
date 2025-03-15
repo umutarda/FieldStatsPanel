@@ -69,6 +69,11 @@ sysinfo.txt
 **/*.mp4
 **/*.webm
 /[Aa]ssets/**/*.json
+/python-tracking/**/*.json
+
+#Audio
+**/*.mp3
+
 # Crashlytics generated file
 crashlytics-build.properties
 
