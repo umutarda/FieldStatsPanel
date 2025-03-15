@@ -22,7 +22,7 @@ public class SingletonManager : MonoBehaviour
             Destroy(gameObject);
         }
     }
-    
+
     /// <summary>
     /// Registers a singleton instance of type T.
     /// If an instance of the same type is already registered and the new instance is a Component, 
@@ -60,7 +60,7 @@ public class SingletonManager : MonoBehaviour
         // If the instance is a Component, set its parent to this SingletonManager's transform.
         if (comp != null)
         {
-            comp.transform.SetParent(this.transform);
+            DontDestroyOnLoad(comp.gameObject);
         }
     }
 
@@ -70,11 +70,17 @@ public class SingletonManager : MonoBehaviour
     public void Unregister<T>(T instance)
     {
         System.Type type = typeof(T);
+        Component comp = instance as Component;
+
         if (registeredSingletons.TryGetValue(type, out object registeredInstance))
         {
             if (registeredInstance.Equals(instance))
             {
                 registeredSingletons.Remove(type);
+                if (comp != null)
+                {
+                    Destroy(comp.gameObject);
+                }
                 Debug.Log("Unregistered singleton of type: " + type);
             }
             else
