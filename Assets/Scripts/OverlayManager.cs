@@ -46,7 +46,7 @@ public class OverlayManager : MonoBehaviour
     // Called whenever a new video frame is ready
     void OnFrameReady(VideoPlayer source, long frameIdx)
     {
-        Debug.Log("OnFrameReady(VideoPlayer source, long frameIdx)");
+        //Debug.Log("OnFrameReady(VideoPlayer source, long frameIdx)");
         DrawFrameOverlay((int)frameIdx);
     }
 
