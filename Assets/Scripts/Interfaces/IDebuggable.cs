@@ -1,0 +1,4 @@
+interface IDebuggable 
+{
+    void DebugUpdate();
+}

@@ -1,17 +1,19 @@
-public struct UpdateResult
+[System.Serializable]
+public class UpdateResult
 {
     public long lost_frame_id;
     public FrameTrackingData[] tracks;
     public int[] lost_ids;
 }
-
-public struct FrameTrackingData
+[System.Serializable]
+public class FrameTrackingData
 {
     public int fr;
     public TrackObject[] obj;
 }
 
-public struct TrackObject
+[System.Serializable]
+public class TrackObject
 {
     public int id;
     public int cls_id;
