@@ -4,7 +4,8 @@ using UnityEngine;
 public enum AssetName
 {
     BOTTOM_PANEL_ITEM,
-    TRACKING_ELEMENT
+    TRACKING_ELEMENT,
+    TRACKING_SELECTION_CURSOR
 }
 
 [System.Serializable]

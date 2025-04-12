@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 using System;
 
 
-public class OverlayController : MonoBehaviour, IPointerClickHandler
+public class OverlayController : MonoBehaviour, IPointerClickHandler, IDebuggable
 {
 
     public int src;
@@ -31,7 +31,7 @@ public class OverlayController : MonoBehaviour, IPointerClickHandler
         get { return targetFrame; }
     }
 
-
+    private bool showOldTrackingData;
     void Awake()
     {
         videoPlayer = GetComponent<VideoPlayer>();
@@ -115,12 +115,12 @@ public class OverlayController : MonoBehaviour, IPointerClickHandler
 
     public void Draw(int frameIndex)
     {
-        
+
         DrawFrameOverlay(frameIndex);    // YOLO overlay drawing logic (unchanged)
         DrawTrackingOverlay(frameIndex);   // New tracking overlay drawing
     }
 
-    public void Redraw() 
+    public void Redraw()
     {
         Draw((int)CurrentFrame);
     }
@@ -166,6 +166,7 @@ public class OverlayController : MonoBehaviour, IPointerClickHandler
             float y = (1 - normLowY) * parentHeight;
 
             GameObject overlay = new GameObject("OverlayBox", typeof(RectTransform));
+            overlay.tag = "OverlayBox";
             overlay.transform.SetParent(transform, false);
             RectTransform rect = overlay.GetComponent<RectTransform>();
             rect.anchorMin = new Vector2(0, 0);
@@ -188,28 +189,37 @@ public class OverlayController : MonoBehaviour, IPointerClickHandler
         float parentWidth = parentRect.rect.width;
         float parentHeight = parentRect.rect.height;
 
-        var byteTrackData = SingletonManager.Instance.Get<TrackingManager>().ByteTrackData;
         // Find tracking data for the current frame.
         FrameTrackingData currentTrackingData = null;
-        bool found = false;
-        if (byteTrackData != null)
+
+        if (!showOldTrackingData)
         {
-            foreach (var ft in byteTrackData)
+            var byteTrackData = SingletonManager.Instance.Get<TrackingManager>().ByteTrackData;
+
+            if (byteTrackData != null)
             {
-                if (ft.fr == frameIndex)
+                foreach (var ft in byteTrackData)
                 {
-                    currentTrackingData = ft;
-                    found = true;
-                    break;
+                    if (ft.fr == frameIndex)
+                    {
+                        currentTrackingData = ft;
+                        break;
+                    }
                 }
             }
+
         }
-        if (!found)
+
+        else
+        {
+            currentTrackingData = SingletonManager.Instance.Get<TrackingManager>().OldMaxFrameData;
+        }
+
+        if (currentTrackingData == null)
         {
             Debug.LogWarning($"{transform.name}::OverlayController Frame tracking data not found at frame {frameIndex}");
             return;
         }
-
 
         var trackingElementPrefab = SingletonManager.Instance.Get<AssetManager>().GetAsset(AssetName.TRACKING_ELEMENT);
         // For each track object, instantiate a circle prefab and update its text with the id.
@@ -278,4 +288,12 @@ public class OverlayController : MonoBehaviour, IPointerClickHandler
         //Draw((int)CurrentFrame);
     }
 
+    public void DebugUpdate()
+    {
+        if (Input.GetKeyDown(KeyCode.O))
+        {
+            showOldTrackingData = !showOldTrackingData;
+            Redraw();
+        }
+    }
 }

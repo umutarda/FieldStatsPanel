@@ -1,3 +1,5 @@
+using System;
+
 [System.Serializable]
 public class UpdateResult
 {
@@ -10,6 +12,16 @@ public class FrameTrackingData
 {
     public int fr;
     public TrackObject[] obj;
+    public FrameTrackingData() 
+    {
+
+    }
+    public FrameTrackingData(FrameTrackingData ftd)
+    {
+        this.fr = ftd.fr;
+        this.obj = new TrackObject[ftd.obj.Length];
+        Array.Copy(ftd.obj,this.obj,ftd.obj.Length);
+    }
 }
 
 [System.Serializable]

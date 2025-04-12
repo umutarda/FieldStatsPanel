@@ -38,34 +38,88 @@ def update(start_frame, coord_ids):
         coord = transform_point(
             mapping["c"], mapping["src"]
         )  # This is a list like [x, y]
+
+
         assigned_id = mapping["id"]  # The assigned id
+
         # Convert the coordinate into a tuple for comparison
         coord_tuple = tuple(coord)
         match_found = False
 
+        print(assigned_id,": ",coord)
+        min_distance = float('inf')
+        min_index = None
+        min_transformed_center = tuple()
+        
         for idx, obj in enumerate(objects):
             transformed_center = obj.get("transformed_center")
+            if obj.get("source") == "right":
+                transformed_center = [transformed_center[0]+347,transformed_center[1]]
+                
             if transformed_center is not None:
-                # Ensure transformed_center is a tuple for comparison
                 if isinstance(transformed_center, list):
                     transformed_center = tuple(transformed_center)
-                # Use np.allclose with a small tolerance to compare coordinates
-                if np.allclose(transformed_center, coord_tuple, atol=1e-2):
-                    start_map[idx] = assigned_id
-                    match_found = True
-                    break
+                distance = np.linalg.norm(np.array(transformed_center) - np.array(coord_tuple))
+                #print(f"Mapping {assigned_id}: Object {idx} with center {transformed_center} has distance {distance}")
+                if distance < min_distance:
+                    min_distance = distance
+                    min_index = idx
+                    min_transformed_center = transformed_center
 
-        if not match_found:
-            # No matching object found: add a new object with default values
-            new_object = {
-                "transformed_center": list(coord_tuple),
-                "source": "unknown",
-                "confidence": 1.0,
-                "team_index": assigned_id,
-            }
-            new_index = len(objects)
-            objects.append(new_object)
-            start_map[new_index] = assigned_id
+
+        # Set the value for the object with the minimum distance
+        if min_index is not None:
+            start_map[min_index] = assigned_id
+            print("Minimum distance match found for", assigned_id, "at index", min_index, "with distance", min_distance," with t_c: ",min_transformed_center)
+        #else:
+            #print("No valid transformed_center found.")
+
+        # for idx, obj in enumerate(objects):
+        #     transformed_center = obj.get("transformed_center")
+        #     if transformed_center is not None:
+        #         # Ensure transformed_center is a tuple for consistency
+        #         if isinstance(transformed_center, list):
+        #             transformed_center = tuple(transformed_center)
+                
+        #         # Convert to NumPy arrays
+        #         center_arr = np.array(transformed_center)
+        #         coord_arr = np.array(coord_tuple)
+                
+        #         # Calculate the Euclidean distance between the two points
+        #         distance = np.linalg.norm(center_arr - coord_arr)
+                
+        #         # Check if the distance is within a desired threshold
+        #         if distance < 10:  # Replace 1 with your desired threshold
+        #             start_map[idx] = assigned_id
+        #             match_found = True
+        #             print("match found for", assigned_id, "with distance:", distance)
+        #             break
+
+        # for idx, obj in enumerate(objects):
+        #     transformed_center = obj.get("transformed_center")
+        #     if transformed_center is not None:
+        #         # Ensure transformed_center is a tuple for comparison
+        #         if isinstance(transformed_center, list):
+        #             transformed_center = tuple(transformed_center)
+        #         # Use np.allclose with a small tolerance to compare coordinates
+        #         if np.allclose(transformed_center, coord_tuple, atol=1):
+        #             start_map[idx] = assigned_id
+        #             match_found = True
+        #             print("match found for", assigned_id)
+        #             break
+
+        # if not match_found:
+        #     print("match not found for", assigned_id)
+        #     # No matching object found: add a new object with default values
+        #     new_object = {
+        #         "transformed_center": list(coord_tuple),
+        #         "source": "unknown",
+        #         "confidence": 1.0,
+        #         "team_index": assigned_id,
+        #     }
+        #     new_index = len(objects)
+        #     objects.append(new_object)
+        #     start_map[new_index] = assigned_id
 
     # Filter the JSON data to include only frames in the desired range
     filtered_data = [
@@ -270,7 +324,7 @@ def perform_tracking_from_json(input_data, start_frame, start_map):
         for i in range(23):
             if (i + 1) in active_tracks and not active_tracks[i + 1]["active"]:
                 lost_tracker[i] += 1
-                if lost_tracker[i] > 60:
+                if lost_tracker[i] > 120:
                     print("Lost for 1 second, index=", i + 1, "at frame", frame_index)
                     lost_array.add(i + 1)
             else:

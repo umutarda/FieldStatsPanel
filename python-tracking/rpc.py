@@ -22,7 +22,7 @@ def run(args: argparse.Namespace) -> None:
         # The update function is expected to return a dict that matches the UpdateResult struct.
         update_result = update_data(track_request)
         print("UpdateResult from processing:")
-        print(update_result)
+        #print(update_result)
         
         # Send the update result back to Unity.
         unity_comms.OnReceive(updateResult=update_result)

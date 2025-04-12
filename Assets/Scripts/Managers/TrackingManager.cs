@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using System;
 using UnityEngine.Video;
 using System.Linq;
+using Unity.VisualScripting;
 
 public class TrackingManager : MonoBehaviour, IDebuggable
 {
@@ -11,6 +12,7 @@ public class TrackingManager : MonoBehaviour, IDebuggable
 
     public YoloData YoloData { get; private set; }
     public FrameTrackingData[] ByteTrackData { get; private set; }
+    public FrameTrackingData OldMaxFrameData { get; private set; }
     public bool IsReady { get; private set; }
 
     private TrackRequest requestData;
@@ -22,6 +24,7 @@ public class TrackingManager : MonoBehaviour, IDebuggable
     private OverlayPropertiesManager overlayPropertiesManager;
 
     private const int MAX_PLAYER_COUNT = 23;
+    private int[] startIds;
     void Awake()
     {
         YoloData = JsonConvert.DeserializeObject<YoloData>(yoloJsonFile.text);
@@ -32,6 +35,7 @@ public class TrackingManager : MonoBehaviour, IDebuggable
     void Start()
     {
         trackingManagerRpc = new(this);
+        OldMaxFrameData = null;
         overlayControllersManager = SingletonManager.Instance.Get<OverlayControllersManager>();
         bottomPanelController = SingletonManager.Instance.Get<BottomPanelController>();
         videoControlSlider = SingletonManager.Instance.Get<VideoControlSlider>();
@@ -47,7 +51,7 @@ public class TrackingManager : MonoBehaviour, IDebuggable
         GoToAndStop(7200);
 
 
-        int[] startIds = new int[MAX_PLAYER_COUNT];
+        startIds = new int[MAX_PLAYER_COUNT];
         for (int i = 0; i < MAX_PLAYER_COUNT; i++)
         {
             startIds[i] = i + 1;
@@ -72,7 +76,7 @@ public class TrackingManager : MonoBehaviour, IDebuggable
     /// <param name="source">The source identifier for this entry.</param>
     public void AddTrackEntry(Vector2 location, int source)
     {
-        
+
         var currentHead = bottomPanelController.PopHeadItem();
         if (currentHead == null)
         {
@@ -97,11 +101,12 @@ public class TrackingManager : MonoBehaviour, IDebuggable
         string jsonEntry = JsonConvert.SerializeObject(newEntry);
         Debug.Log("Added track entry: " + jsonEntry);
 
-        AddToFrameTrackingData(newEntry,(int)videoControlSlider.maxValue);
+        AddToFrameTrackingData(newEntry, (int)videoControlSlider.maxValue);
 
         currentHead = bottomPanelController.SeekHeadItem();
         if (currentHead == null)
         {
+            //Advance();
             RequestReady();
         }
     }
@@ -112,7 +117,7 @@ public class TrackingManager : MonoBehaviour, IDebuggable
         long currentFrame = (long)videoControlSlider.maxValue;
 
         // Find the tracking data for the current frame.
-        FrameTrackingData frameData = Array.Find<FrameTrackingData>(ByteTrackData,data => data.fr == currentFrame);
+        FrameTrackingData frameData = Array.Find<FrameTrackingData>(ByteTrackData, data => data.fr == currentFrame);
         List<TrackEntry> convertedEntries = new List<TrackEntry>();
 
         if (frameData != null && frameData.obj != null)
@@ -155,6 +160,10 @@ public class TrackingManager : MonoBehaviour, IDebuggable
     {
         string jsonResult = JsonConvert.SerializeObject(updateResult, Formatting.Indented);
         Debug.Log(jsonResult);
+
+        if (ByteTrackData.Length > 0)
+            OldMaxFrameData = ByteTrackData[^1];
+
         ByteTrackData = updateResult.tracks;
 
         videoControlSlider.minValue = videoControlSlider.maxValue;
@@ -190,10 +199,10 @@ public class TrackingManager : MonoBehaviour, IDebuggable
     /// It converts the current track entries into TrackObjects and stores them.
     /// </summary>
     /// <param name="frameIndex">The frame index to update.</param>
-    public void AddToFrameTrackingData(TrackEntry entry,int frameIndex)
+    public void AddToFrameTrackingData(TrackEntry entry, int frameIndex)
     {
         // Find existing frame tracking data for the specified frame.
-        FrameTrackingData existingData =  Array.Find<FrameTrackingData>(ByteTrackData,data => data.fr == frameIndex);
+        FrameTrackingData existingData = Array.Find<FrameTrackingData>(ByteTrackData, data => data.fr == frameIndex);
 
         if (existingData != null)
         {
@@ -211,6 +220,7 @@ public class TrackingManager : MonoBehaviour, IDebuggable
                     {
                         // Update the coordinate (c) while keeping other properties intact.
                         currentTrackObjects[i].c = entry.c;
+                        currentTrackObjects[i].src = entry.src;
                         found = true;
                         break;
                     }
@@ -260,12 +270,36 @@ public class TrackingManager : MonoBehaviour, IDebuggable
     }
 
 
+    public void Advance()
+    {
+        if (ByteTrackData.Length > 0)
+            OldMaxFrameData = ByteTrackData[ByteTrackData.Length - 1];
+
+
+        // ByteTrackData = new FrameTrackingData[0];
+
+        videoControlSlider.minValue = videoControlSlider.maxValue;
+        videoControlSlider.maxValue = videoControlSlider.minValue + 60;
+        videoControlSlider.value = videoControlSlider.maxValue;
+        var list = ByteTrackData.ToList();
+        var newMax = new FrameTrackingData(OldMaxFrameData)
+        {
+            fr = (int)videoControlSlider.maxValue
+        };
+        list.Add(newMax);
+        ByteTrackData = list.ToArray();
+
+        bottomPanelController.PopulateIds(startIds);
+        overlayPropertiesManager.UpdateLostIds(startIds);
+    }
+
     public void DebugUpdate()
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
             //AddToFrameTrackingData((int)videoControlSlider.maxValue);
             RequestReady();
+            //Advance();
         }
 
         if (Input.GetKeyDown(KeyCode.P))
@@ -273,7 +307,7 @@ public class TrackingManager : MonoBehaviour, IDebuggable
             GoToAndStop((long)videoControlSlider.maxValue, false);
         }
 
-        if(Input.GetKeyDown(KeyCode.Return)) 
+        if (Input.GetKeyDown(KeyCode.Return))
         {
             Destroy(bottomPanelController.PopHeadItem());
         }
