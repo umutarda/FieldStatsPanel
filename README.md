@@ -1,6 +1,6 @@
 # YOLO Tracking Panel Project Overview
 
-This project is a sophisticated object tracking system that combines Unity for the front-end user interface with Python-based tracking algorithms on the backend. Let me break down how it works:
+This project is a sophisticated object tracking system that combines Unity for the front-end user interface with Python-based tracking algorithms on the backend.
 
 ## Core Components
 
