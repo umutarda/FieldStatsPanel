@@ -16,6 +16,26 @@ This project is a sophisticated object tracking system that combines Unity for t
 - **Coordinate Transformation**: Maps between different coordinate spaces
 - **RPC Server**: Communicates with Unity frontend
 
+## Architecture
+
+```
+                  +------------------+
+                  | SingletonManager |
+                  +------------------+
+                           |
+                           v
++-------------+    +----------------+    +-------------+
+|  UI Layer   |<-->| TrackingManager|<-->| Python RPC  |
+|  (Unity)    |    |  (Core Logic)  |    | (ByteTrack) |
++-------------+    +----------------+    +-------------+
+      |                    |                    |
+      v                    v                    v
++-------------+    +----------------+    +-------------+
+| Overlay     |    | Data Classes   |    | Transform   |
+| Controllers |    | (Data Models)  |    | Utility     |
++-------------+    +----------------+    +-------------+
+```
+
 ## How It Works (Data Flow)
 
 1. **Initial Detection**:
